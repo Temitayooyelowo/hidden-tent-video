@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Http Video Streaming</title>
+  <style>
+    body {
+      margin: 40px auto;
+      max-width: 650px;
+      background-color: #444;
+    }
+
+    video {
+      max-height: 300px;
+    }
+  </style>
+</head>
+<body onload="getVideoSize()">
+  <!-- Stream from S3 -->
+  <video id="VideoPlayer1" width="650" controls muted="muted" autoplay>
+    <!-- <source src="/videos/s3/stream" type="video/mp4"> -->
+  </video>
+
+  <!-- Stream locally -->
+  <!-- <video id="VideoPlayer2" width="650" controls muted="muted" autoplay>
+    <source src="/videos/stream" type="video/mp4" id="local-vid">
+  </video> -->
+
+  <script>
+    function getVideoSize() {
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          var videoSize = JSON.parse(this.responseText);
+          var x = document.createElement("SOURCE");
+          x.setAttribute("src", "/videos/s3/stream?videoSize=" + videoSize.videoSize);
+          x.setAttribute("type", "video/mp4");
+          document.getElementById("VideoPlayer1").appendChild(x);
+        }
+      };
+      xhttp.open("GET", "/videos/getVideoSize", true);
+      xhttp.send();
+    }
+  </script>
+</body>
+</html>
