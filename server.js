@@ -58,8 +58,10 @@ app.get('/videos/getVideoSize', function(req, res) {
         return res.sendStatus(400);
     }
 
-    const videoSize = data.Contents[0].Size;
-    res.send({videoSize});
+    // console.log(data.Contents[0]);
+    // const videoSize = data.Contents[0].Size;
+    // res.send({videoSize});
+    res.send(data.Contents[0]);
   });
   // const videoPath = 'media/test.mp4';
   // const videoSize = fs.statSync(videoPath).size;
