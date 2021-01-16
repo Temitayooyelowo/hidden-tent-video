@@ -1,9 +1,15 @@
 require('dotenv/config')
 const express = require('express');
+const passport = require('passport');
+const session = require('express-session');
 const multer = require('multer');
 const S3 = require('aws-sdk/clients/s3');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+
+
+const users = require('./routes/users');
+const auth = require('./routes/auth');
 
 const app = express();
 const port = process.env.PORT || 3550;
@@ -11,6 +17,26 @@ const port = process.env.PORT || 3550;
 /** Middleware */
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+
+const expressSession = session({
+  secret: process.env.JWT_SECRET,
+  resave: true,
+  saveUninitialized: true
+});
+
+app.use(expressSession);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.use('/users', users);
+app.use('/auth', auth);
+
+function ensureAuthenticated(req, res, next) {
+  console.log("In ensure authenticated")
+  if (req.isAuthenticated()) { return next(); }
+  res.redirect('/auth/login')
+}
 
 const s3 = new S3({
   accessKeyId: process.env.AWS_ID,
@@ -30,7 +56,7 @@ const storage = multer.memoryStorage({
 
 const upload = multer({storage: storage});
 
-app.post('/videos/upload', upload.single('video'), (req, res) => {
+app.post('/videos/upload', ensureAuthenticated, upload.single('video'), (req, res) => {
   const video = req.file.originalname.split('.');
   const videoType = video.pop();
 
@@ -84,23 +110,24 @@ app.get('/videos/s3/stream', function(req, res) {
     Key: process.env.TEST_FILE_NAME,
   };
 
-  // const positions = range.replace(/bytes=/, '').split('-');
-  // const start = parseInt(positions[0], 10);
+  const positions = range.replace(/bytes=/, '').split('-');
+  const start = parseInt(positions[0], 10);
 
-  // const end = positions[1] ? parseInt(positions[1], 10) : videoSize - 1;
-  // const chunksize = (end - start) + 1;
+  const end = positions[1] ? parseInt(positions[1], 10) : videoSize - 1;
+  const chunksize = (end - start) + 1;
 
-  const CHUNK_SIZE = (10 ** 6)*2; // 1 MB
-  const start = Number(range.replace(/\D/g, ''));
-  const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+  // const CHUNK_SIZE = (10 ** 6)*2; // 1 MB
+  // const start = Number(range.replace(/\D/g, ''));
+  // const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
 
-  const contentLength = end - start + 1;
+  // const contentLength = end - start + 1;
 
   const headers = {
       'Cache-Contorl': `max-age=${300}, private`, // seconds
       'Content-Range'  : 'bytes ' + start + '-' + end + '/' + videoSize,
       'Accept-Ranges'  : 'bytes',
-      'Content-Length' : contentLength,
+      // 'Content-Length' : contentLength,
+      'Content-Length' : chunksize,
       'Content-Type'   : 'video/mp4',
   };
 
@@ -145,7 +172,7 @@ app.get('/videos/stream', function(req, res) {
   videoStream.pipe(res);
 });
 
-app.get('/', function(req, res) {
+app.get('/', ensureAuthenticated, function(req, res) {
   res.sendFile(`${__dirname}/index.html`);
 })
 
