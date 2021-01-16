@@ -1,53 +1,25 @@
 require('dotenv/config')
 const express = require('express');
-const passport = require('passport');
-const session = require('express-session');
 const multer = require('multer');
 const S3 = require('aws-sdk/clients/s3');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 
-
-const users = require('./routes/users');
-const auth = require('./routes/auth');
+const Product = require("./db/models/Product");
 
 const app = express();
 const port = process.env.PORT || 3550;
 
 /** Middleware */
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
-
-const expressSession = session({
-  secret: process.env.JWT_SECRET,
-  resave: true,
-  saveUninitialized: true
-});
-
-app.use(expressSession);
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-app.use('/users', users);
-app.use('/auth', auth);
-
-function ensureAuthenticated(req, res, next) {
-  console.log("In ensure authenticated")
-  if (req.isAuthenticated()) { return next(); }
-  res.redirect('/auth/login')
-}
+app.use(express.urlencoded({extended: true}))
 
 const s3 = new S3({
   accessKeyId: process.env.AWS_ID,
   secretAccessKey: process.env.AWS_SECRET
 });
 
-// since we're uploading to s3 we want to store files in memory
-// as buffer objects using the memory storage engine and then
-// upload to s3
-// CONSTRAINT: Uploading very large files to memory can make
-// application run out of memory. Might be better to use diskStorage
 const storage = multer.memoryStorage({
   destination: function(req, file, callback) {
     callback(null, '')
@@ -56,7 +28,8 @@ const storage = multer.memoryStorage({
 
 const upload = multer({storage: storage});
 
-app.post('/videos/upload', ensureAuthenticated, upload.single('video'), (req, res) => {
+app.post('/videos/upload', upload.single('video'), (req, res) => {
+  const barcode_id = req.query.barcode;
   const video = req.file.originalname.split('.');
   const videoType = video.pop();
 
@@ -172,9 +145,120 @@ app.get('/videos/stream', function(req, res) {
   videoStream.pipe(res);
 });
 
-app.get('/', ensureAuthenticated, function(req, res) {
+app.get('/', function(req, res) {
   res.sendFile(`${__dirname}/index.html`);
 })
+
+app.get('/videos/video', function(req, res) {
+  const barcode_id = req.query.barcode;
+  const data = {
+    "products": [
+        {
+            "barcode_number": barcode_id,
+            "barcode_type": "UPC",
+            "barcode_formats": "UPC 017817770620, EAN 0017817770620",
+            "mpn": "789564-0020",
+            "model": "qc35iis",
+            "asin": "",
+            "product_name": "Bose QuietComfort 35 Wireless Headphones II Silver",
+            "title": "",
+            "category": "Electronics > Audio > Audio Components > Headphones & Headsets > Headphones",
+            "manufacturer": "Bose",
+            "brand": "Bose",
+            "label": "",
+            "author": "",
+            "publisher": "",
+            "artist": "",
+            "actor": "",
+            "director": "",
+            "studio": "",
+            "genre": "",
+            "audience_rating": "Adult",
+            "ingredients": "",
+            "nutrition_facts": "",
+            "color": "Silver",
+            "format": "",
+            "package_quantity": "",
+            "size": "One Size",
+            "length": "",
+            "width": "",
+            "height": "",
+            "weight": "3 lb",
+            "release_date": "",
+            "description": "Lose the noise with QuietComfort 35 noise cancelling wireless headphones from Bose Get world class comfort and performance with these Alexa and Google Assistant enabled smart headphones Headphones 7 1 H x 6 7 W x 3 2 D 8 3 oz Audio cable 47 2 USB cable 12 QC35 wireless headphones II USB charging cable Audio cable Carrying case.",
+            "features": [],
+            "images": [
+                "https://images.barcodelookup.com/154/1541244-1.jpg"
+            ],
+            "stores": [],
+            "reviews": []
+        }
+    ]
+  };
+  Product.findOne({id: barcode_id})
+    .then((foundProduct) => {
+      if(!!foundProduct){
+        console.log('Product was found in database...', foundProduct)
+        return res.send(foundProduct.videos);
+      }
+
+      const productInfo = data.products[0];
+
+      const productParams = {
+        "id": productInfo.barcode_number,
+        "type": productInfo.category,
+        "name": productInfo.product_name,
+        "brand": productInfo.brand,
+        "description": productInfo.description,
+        "images": productInfo.images,
+        "videos": [],
+      }
+
+      // const params =  {
+      //   barcode: barcode_id,
+      //   formatted: 'y',
+      //   key: process.env.BUCKET_LOOKUP_KEY,
+      // };
+      // console.log(params);
+      // console.log('Product was not found');
+      // return axios.get('https://api.barcodelookup.com/v2/products', {params});
+
+      /** Comment out to test with axios */
+      const newProduct = new Product(productParams);
+      newProduct.save().then(() => {
+        console.log('Product has been saved...')
+        res.send(productParams.videos);
+      });
+    })
+    // .then((response) => {
+    //   console.log('In response');
+    //   if(!!response){
+    //     console.log('continue');
+    //     return;
+    //   }
+    //   const productInfo = response.data.products[0];
+
+    //   const productParams = {
+    //     "id": productInfo.barcode_number,
+    //     "type": productInfo.category,
+    //     "name": productInfo.product_name,
+    //     "brand": productInfo.brand,
+    //     "description": productInfo.description,
+    //     "images": productInfo.images,
+    //     "videos": [],
+    //   }
+
+    //   const newProduct = new Product(productParams);
+    //   newProduct.save().then(() => {
+    //     // return res.send('Product Saved');
+    //     return res.send(productParams);
+    //   });
+    // })
+    .catch((error) => {
+        console.log(error);
+        return res.status(400).send(error);
+    });
+});
 
 app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`)
