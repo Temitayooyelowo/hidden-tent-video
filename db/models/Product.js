@@ -113,14 +113,14 @@ ProductSchema.statics.getVideo = async function (barcode_id) {
       return product;
     }
 
-    const params =  {
-      barcode: barcode_id,
-      formatted: 'y',
-      key: process.env.BUCKET_LOOKUP_KEY,
-    };
+    // const params =  {
+    //   barcode: barcode_id,
+    //   formatted: 'y',
+    //   key: process.env.BUCKET_LOOKUP_KEY,
+    // };
 
-    console.log('Calling barcode lookup api');
-    const response = await axios.get('https://api.barcodelookup.com/v2/products', {params});
+    // console.log('Calling barcode lookup api');
+    // const response = await axios.get('https://api.barcodelookup.com/v2/products', {params});
 
     console.log('Response is ', response);
     const productInfo = response ? response.data.products[0] : data;

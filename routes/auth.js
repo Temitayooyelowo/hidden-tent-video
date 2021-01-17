@@ -29,8 +29,11 @@ router.post('/login', (req,res) => {
       if(err){
           console.log(err);
       }else {
+          console.log('success');
           passport.authenticate('local')(req,res, () => {
-              res.redirect('/');
+              // res.redirect('/');
+              console.log("Corrrect authentication");
+              res.send("Success");
           });
       }
   });
@@ -48,7 +51,8 @@ router.get('/login',function(req, res, next) {
 router.get('/register',function(req, res, next) {
   console.log("In register router");
   if (req.isAuthenticated()) {
-    return res.redirect('/');
+    // return res.redirect('/');
+    res.status(400).send('Registration invalid...');
   }
   res.sendFile(path.join(__dirname, '../public', 'register.html'));
 });

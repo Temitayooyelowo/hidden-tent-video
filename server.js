@@ -87,7 +87,9 @@ app.post('/videos/upload', ensureAuthenticated, upload.single('video'), async (r
   const url = 'https://test.com';
   try{
     const productInfo = await Product.addVideo(url, barcode_id);
-    res.send(productInfo);
+    res.send({
+      videos: productInfo.videos,
+    });
   }catch(err){
     console.log('Reached Error');
     res.status(400).send(err);
@@ -202,7 +204,9 @@ app.get('/videos/video', ensureAuthenticated, async function(req, res) {
 
   try{
     const productInfo = await Product.getVideo(barcode_id);
-    res.send(productInfo);
+    res.send({
+      videos: productInfo.videos,
+    });
   }catch(err){
     console.log('Reached Error');
     res.status(400).send(err);
