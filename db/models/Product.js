@@ -115,15 +115,57 @@ ProductSchema.statics.addVideo = async function (url, barcode_id) {
   }
 };
 
+// function compare(a, b){
+//   const a_rating = a.likes - a.dislikes;
+//   const b_rating = b.likes - b.dislikes;
+
+//   if(a_rating < b_rating){
+//     return 1;
+//   }else if(a_rating > b_rating) {
+//     return -1;
+//   }
+
+//   return 0;
+// }
+
 ProductSchema.statics.getVideo = async function (barcode_id) {
   const Product = this; //model is the this binding
 
   try{
-    const product = await Product.findOne({id: barcode_id});
+    const products = await Product.aggregate([{
+      "$match": {id: barcode_id}
+      }, {
+          "$unwind": "$videos"
+      }, {
+          "$sort": {
+              "videos.likes": -1,
+              "videos.dislikes": 1
+          }
+      }, {
+          "$group": {
+              "videos": {
+                  "$push": "$videos"
+              },
+              "_id": 0
+          }
+      }, {
+          "$project": {
+              "_id": 0,
+              "videos": 1
+          }
+      }]);
 
-    if(!!product){
-      console.log('Product was found in database...', product)
-      return product;
+    // console.log('Product is: ', product);
+
+    if(!!products || products.length === 1){
+      console.log('Product was found in database...');
+
+
+      const product = products[0];
+      return product.videos;
+      // product.videos.sort(compare);
+      // console.log()
+      // return product;
     }
 
     // const params =  {

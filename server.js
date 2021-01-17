@@ -66,7 +66,7 @@ function ensureAuthenticated(req, res, next) {
   });
 }
 
-app.post('/videos/upload', upload.single('video'), async (req, res) => {
+app.post('/videos/upload', ensureAuthenticated, upload.single('video'), async (req, res) => {
   const barcode_id = req.query.barcode;
   const video = req.file.originalname.split('.');
   const videoType = video.pop();
@@ -216,17 +216,15 @@ app.get('/videos/video', ensureAuthenticated, async function(req, res) {
   const barcode_id = req.query.barcode;
 
   try{
-    const productInfo = await Product.getVideo(barcode_id);
-    res.send({
-      videos: productInfo.videos,
-    });
+    const videos = await Product.getVideo(barcode_id);
+    res.send({videos});
   }catch(err){
     console.log('Reached Error');
     res.status(400).send(err);
   }
 });
 
-app.post('/videos/rateVideo', async function(req, res) {
+app.post('/videos/rateVideo', ensureAuthenticated, async function(req, res) {
   const barcode_id = req.query.barcode;
   const video_url = req.query.video_url;
   const rating = parseInt(req.query.rating);
