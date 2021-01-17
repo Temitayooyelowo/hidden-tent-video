@@ -78,26 +78,29 @@ ProductSchema.statics.addVideo = async function (url, barcode_id) {
       {new: true },
     );
 
+    console.log('Barcode: ', barcode_id);
+
+    // If product found
     if(!!product){
       console.log('Product was found in database...', product)
       return product;
     }
 
-    // const params =  {
-    //   barcode: barcode_id,
-    //   formatted: 'y',
-    //   key: process.env.BUCKET_LOOKUP_KEY,
-    // };
+    const params =  {
+      barcode: barcode_id,
+      formatted: 'y',
+      key: process.env.BUCKET_LOOKUP_KEY,
+    };
 
-    // console.log('Calling barcode lookup api');
-    // const response = await axios.get('https://api.barcodelookup.com/v2/products', {params});
+    console.log('Calling barcode lookup api');
+    const response = await axios.get('https://api.barcodelookup.com/v2/products', {params});
 
-    // const productInfo = response.data.products[0];
-    const productInfo = data.products[0];
+    const productInfo = response.data.products[0];
+    // const productInfo = data.products[0];
 
-    console.log('product info', productInfo);
+    // console.log('product info', productInfo);
     const productParams = {
-      "id": productInfo.barcode_number,
+      "id": barcode_id,
       "type": productInfo.category,
       "name": productInfo.product_name,
       "brand": productInfo.brand,
@@ -171,21 +174,20 @@ ProductSchema.statics.getVideo = async function (barcode_id) {
       // return product;
     }
 
-    // const params =  {
-    //   barcode: barcode_id,
-    //   formatted: 'y',
-    //   key: process.env.BUCKET_LOOKUP_KEY,
-    // };
+    const params =  {
+      barcode: barcode_id,
+      formatted: 'y',
+      key: process.env.BUCKET_LOOKUP_KEY,
+    };
 
-    // console.log('Calling barcode lookup api');
-    // const response = await axios.get('https://api.barcodelookup.com/v2/products', {params});
+    console.log('Calling barcode lookup api');
+    const response = await axios.get('https://api.barcodelookup.com/v2/products', {params});
 
-    // const productInfo = response.data.products[0];
-    const productInfo = data.products[0];
+    const productInfo = response.data.products[0];
+    // const productInfo = data.products[0];
 
-    console.log('product info', productInfo);
     const productParams = {
-      "id": productInfo.barcode_number,
+      "id": barcode_id,
       "type": productInfo.category,
       "name": productInfo.product_name,
       "brand": productInfo.brand,
@@ -194,7 +196,7 @@ ProductSchema.statics.getVideo = async function (barcode_id) {
       "videos": [],
     }
 
-    console.log('About to save a product');
+    console.log('About to save a product', productParams);
     const newProduct = new Product(productParams);
     await newProduct.save();
     return newProduct;
