@@ -2,6 +2,7 @@ require('dotenv/config')
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
+const passportLocalMongoose = require('passport-local-mongoose');
 const multer = require('multer');
 const S3 = require('aws-sdk/clients/s3');
 const fs = require('fs');
@@ -9,8 +10,6 @@ const { v4: uuidv4 } = require('uuid');
 
 const Product = require("./db/models/Product");
 const auth = require('./routes/auth');
-
-const User = require('./db/models/User');
 
 const app = express();
 const port = process.env.PORT || 3550;
@@ -26,26 +25,24 @@ const expressSession = session({
 });
 app.use(expressSession);
 
+const User = require('./db/models/User');
+
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.serializeUser(function (user, done) {
-  console.log(user._id);
-  done(null, user.user.id);
+passport.use(User.createStrategy());
+
+passport.serializeUser(function(user, done) {
+    done(null, user.id);
 });
 
-passport.deserializeUser(async function (id, done) {
-  const user = await User.getUser(id);
-
-  return (!!user.error) ? done(user.error, null) : done (null, user);
+passport.deserializeUser(function(id, done) {
+    User.findById(id, function(err, user) {
+        done(err, user);
+    });
 });
 
 app.use('/auth', auth);
-
-// passport.use(User.createStrategy());
-
-
-// app.use('/user', user);
 
 const s3 = new S3({
   accessKeyId: process.env.AWS_ID,
@@ -66,7 +63,7 @@ function ensureAuthenticated(req, res, next) {
   res.redirect('/auth/login')
 }
 
-app.post('/videos/upload', upload.single('video'), async (req, res) => {
+app.post('/videos/upload', ensureAuthenticated, upload.single('video'), async (req, res) => {
   const barcode_id = req.query.barcode;
   const video = req.file.originalname.split('.');
   const videoType = video.pop();
@@ -97,7 +94,7 @@ app.post('/videos/upload', upload.single('video'), async (req, res) => {
   }
 });
 
-app.get('/videos/getVideoSize', function(req, res) {
+app.get('/videos/getVideoSize', ensureAuthenticated, function(req, res) {
   s3.listObjectsV2(
     {MaxKeys: 1, Prefix: process.env.TEST_FILE_NAME, Bucket: process.env.AWS_BUCKET_NAME},
     function(err, data)  {
@@ -118,7 +115,7 @@ app.get('/videos/getVideoSize', function(req, res) {
 });
 
 // TODO: Need to figure out how to do this in chunks
-app.get('/videos/s3/stream', function(req, res) {
+app.get('/videos/s3/stream', ensureAuthenticated, function(req, res) {
   const range = req.headers.range;
   const videoSize = req.query.videoSize;
   if(!range) {
@@ -167,7 +164,7 @@ app.get('/videos/s3/stream', function(req, res) {
   stream.pipe(res);
 });
 
-app.get('/videos/stream', function(req, res) {
+app.get('/videos/stream', ensureAuthenticated, function(req, res) {
   const range = req.headers.range;
   if(!range) {
     res.status(400).send('Requires range header...');
@@ -200,7 +197,7 @@ app.get('/', ensureAuthenticated, function(req, res) {
   res.sendFile(`${__dirname}/index.html`);
 })
 
-app.get('/videos/video', async function(req, res) {
+app.get('/videos/video', ensureAuthenticated, async function(req, res) {
   const barcode_id = req.query.barcode;
 
   try{
