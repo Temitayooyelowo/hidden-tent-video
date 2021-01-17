@@ -68,6 +68,7 @@ function ensureAuthenticated(req, res, next) {
 
 app.post('/videos/upload', ensureAuthenticated, upload.single('video'), async (req, res) => {
   const barcode_id = req.query.barcode;
+  console.log('barcode...', barcode_id);
   const video = req.file.originalname.split('.');
   const videoType = video.pop();
 
