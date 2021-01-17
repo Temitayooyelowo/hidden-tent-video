@@ -73,42 +73,42 @@ app.post('/videos/upload', ensureAuthenticated, upload.single('video'), async (r
   const videoType = video.pop();
 
   /**  Remove comment out for the s3 upload */
-  // const params = {
-  //   Bucket: process.env.AWS_BUCKET_NAME,
-  //   Key: `public/${uuidv4()}.${videoType}`, // make the file name unique
-  //   Body: req.file.buffer,
-  //   ACL: "public-read",
-  // };
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: `public/${uuidv4()}.${videoType}`, // make the file name unique
+    Body: req.file.buffer,
+    ACL: "public-read",
+  };
 
-  // s3.upload(params, async  (error, data) => {
-  //   if (error) {
-  //     res.status(400).send(error);
-  //   }
+  s3.upload(params, async  (error, data) => {
+    if (error) {
+      res.status(400).send(error);
+    }
 
-  //   const url = data.Location;
-  //   console.log(data);
-  //   try{
-  //     const productInfo = await Product.addVideo(url, barcode_id);
-  //     res.send({
-  //       videos: productInfo.videos,
-  //     });
-  //   }catch(err){
-  //     console.log('Reached Error');
-  //     res.status(400).send(err);
-  //   }
-  // });
+    const url = data.Location;
+    console.log(data);
+    try{
+      const productInfo = await Product.addVideo(url, barcode_id);
+      res.send({
+        videos: productInfo.videos,
+      });
+    }catch(err){
+      console.log('Reached Error');
+      res.status(400).send(err);
+    }
+  });
 
   /** Add comment for s3 upload  */
-  const url = 'https://test.com';
-  try{
-    const productInfo = await Product.addVideo(url, barcode_id);
-    res.send({
-      videos: productInfo.videos,
-    });
-  }catch(err){
-    console.log('Reached Error');
-    res.status(400).send(err);
-  }
+  // const url = 'https://test.com';
+  // try{
+  //   const productInfo = await Product.addVideo(url, barcode_id);
+  //   res.send({
+  //     videos: productInfo.videos,
+  //   });
+  // }catch(err){
+  //   console.log('Reached Error');
+  //   res.status(400).send(err);
+  // }
 });
 
 app.get('/videos/getVideoSize', ensureAuthenticated, function(req, res) {
