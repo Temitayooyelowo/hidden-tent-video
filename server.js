@@ -79,12 +79,13 @@ app.post('/videos/upload', ensureAuthenticated, upload.single('video'), async (r
   //   ACL: "public-read",
   // };
 
-  // s3.upload(params, (error, data) => {
+  // s3.upload(params, async  (error, data) => {
   //   if (error) {
   //     res.status(400).send(error);
   //   }
 
-  //   const url = 'https://test.com';
+  //   const url = data.Location;
+  //   console.log(data);
   //   try{
   //     const productInfo = await Product.addVideo(url, barcode_id);
   //     res.send({
