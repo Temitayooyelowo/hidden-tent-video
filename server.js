@@ -71,7 +71,7 @@ app.post('/videos/upload', upload.single('video'), async (req, res) => {
   const video = req.file.originalname.split('.');
   const videoType = video.pop();
 
-  /**  Comment out for the s3 upload */
+  /**  Remove comment out for the s3 upload */
   // const params = {
   //   Bucket: process.env.AWS_BUCKET_NAME,
   //   Key: `public/${uuidv4()}.${videoType}`, // make the file name unique
@@ -84,9 +84,19 @@ app.post('/videos/upload', upload.single('video'), async (req, res) => {
   //     res.status(400).send(error);
   //   }
 
-  //   res.status(200).send(data);
+  //   const url = 'https://test.com';
+  //   try{
+  //     const productInfo = await Product.addVideo(url, barcode_id);
+  //     res.send({
+  //       videos: productInfo.videos,
+  //     });
+  //   }catch(err){
+  //     console.log('Reached Error');
+  //     res.status(400).send(err);
+  //   }
   // });
 
+  /** Add comment for s3 upload  */
   const url = 'https://test.com';
   try{
     const productInfo = await Product.addVideo(url, barcode_id);
