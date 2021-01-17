@@ -201,7 +201,9 @@ app.get('/videos/video', function(req, res) {
     .then((foundProduct) => {
       if(!!foundProduct){
         console.log('Product was found in database...', foundProduct)
-        return res.send(foundProduct.videos);
+        return res.send({
+          videos: foundProduct.videos
+        });
       }
 
       const productInfo = data.products[0];
@@ -213,7 +215,7 @@ app.get('/videos/video', function(req, res) {
         "brand": productInfo.brand,
         "description": productInfo.description,
         "images": productInfo.images,
-        "videos": [],
+        "videos": ["https://the-hidden-tent.s3.amazonaws.com/public-vod/test.mp4","https://the-hidden-tent.s3.amazonaws.com/public-vod/test2.mp4","https://the-hidden-tent.s3.amazonaws.com/public-vod/test3.mp4"],
       }
 
       // const params =  {
@@ -229,7 +231,9 @@ app.get('/videos/video', function(req, res) {
       const newProduct = new Product(productParams);
       newProduct.save().then(() => {
         console.log('Product has been saved...')
-        res.send(productParams.videos);
+        res.send({
+          videos: productParams.videos
+        });
       });
     })
     // .then((response) => {
