@@ -51,8 +51,8 @@ router.get('/login',function(req, res, next) {
 router.get('/register',function(req, res, next) {
   console.log("In register router");
   if (req.isAuthenticated()) {
-    // return res.redirect('/');
-    res.status(400).send('Registration invalid...');
+    return res.redirect('/');
+    //res.status(400).send('Registration invalid...');
   }
   res.sendFile(path.join(__dirname, '../public', 'register.html'));
 });
