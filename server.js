@@ -66,7 +66,7 @@ function ensureAuthenticated(req, res, next) {
   });
 }
 
-app.post('/videos/upload', ensureAuthenticated, upload.single('video'), async (req, res) => {
+app.post('/videos/upload', upload.single('video'), async (req, res) => {
   const barcode_id = req.query.barcode;
   const video = req.file.originalname.split('.');
   const videoType = video.pop();
@@ -213,6 +213,101 @@ app.get('/videos/video', ensureAuthenticated, async function(req, res) {
   }catch(err){
     console.log('Reached Error');
     res.status(400).send(err);
+  }
+});
+
+app.post('/videos/rateVideo', async function(req, res) {
+  const barcode_id = req.query.barcode;
+  const video_url = req.query.video_url;
+  const rating = parseInt(req.query.rating);
+
+  let updatedValue = {};
+  if (rating === 1){
+    updatedValue = {$inc : {'videos.$.likes' : 1} };
+  } else if (rating === -1) {
+    updatedValue = {$inc : {'videos.$.dislikes' : 1} };
+  } else {
+    return res.status(200).send({
+      message: 'Video is not updated',
+    });
+  }
+
+  console.log(updatedValue);
+  console.log(video_url);
+  console.log(req.user);
+  console.log(req.body.user);
+
+  try {
+    let product;
+
+    console.log('Updating video');
+    const username = req.user ? req.user.username : 'temp@temp.com';
+    let user = await User.findOne({username: username,"videoRatings": {$elemMatch: {'videoId': video_url}}}).select({ "videoRatings": {$elemMatch: {'videoId': video_url}}});
+    console.log(user);
+    console.log('Has user been found?', !!user);
+
+    // User has NOT rated this video
+    if(!user) {
+      console.log('User has not rated this video...')
+      const ratingInfo = {
+        'videoId': video_url,
+        'rating': rating
+      }
+      product = await Product.findOneAndUpdate(
+        {'videos.url': video_url},
+        updatedValue,
+        {new: true },
+      );
+
+      if(!!product){
+        user = await User.findOneAndUpdate(
+          {username: username},
+          {$push: {'videoRatings': ratingInfo}},
+          {new: true },
+        );
+      }
+
+      return res.send({product});
+    }
+
+    console.log('User has rated this video');
+
+    let prevRating = user.videoRatings[0].rating;
+    let newRating = rating;
+
+
+    if (prevRating === newRating) {
+      return res.send({
+        product,
+        message: 'Rating has not changed...'
+      });
+    }
+
+    // set video rating
+    console.log('Setting video rating');
+    user = await User.findOneAndUpdate(
+      {username: username, "videoRatings": {$elemMatch: {'videoId': video_url}}},
+      {$set : {'videoRatings.$.rating' : rating}},
+      {new: true },
+    );
+
+    console.log('Finished setting');
+
+    if (prevRating === 1){
+      updatedValue['$inc']['videos.$.likes'] = -1;
+    } else if (prevRating === -1) {
+      updatedValue['$inc']['videos.$.dislikes'] = -1;
+    }
+
+    product = await Product.findOneAndUpdate(
+      {'videos.url': video_url},
+      updatedValue,
+      {new: true },
+    );
+    return res.send({product});
+
+  } catch(e) {
+    res.status(400).send(e);
   }
 });
 

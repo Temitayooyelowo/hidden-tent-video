@@ -8,7 +8,13 @@ const ProductSchema = new mongoose.Schema({
   "brand": String,
   "description": String,
   "images": [String],
-  "videos": [String],
+  "videos": [
+    {
+      "likes": Number,
+      "dislikes": Number,
+      "url": String,
+    }
+  ],
 });
 
 // const data = {
@@ -60,9 +66,16 @@ ProductSchema.statics.addVideo = async function (url, barcode_id) {
   const Product = this; //model is the this binding
 
   try{
+    const videoInfo = {
+      likes: 0,
+      dislikes: 0,
+      url,
+    }
+
     const product = await Product.findOneAndUpdate(
       {id: barcode_id},
-      {$push: {videos: url}}
+      {$push: {videos: videoInfo}},
+      {new: true },
     );
 
     if(!!product){
