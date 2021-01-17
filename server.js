@@ -1,19 +1,51 @@
 require('dotenv/config')
 const express = require('express');
+const session = require('express-session');
+const passport = require('passport');
 const multer = require('multer');
 const S3 = require('aws-sdk/clients/s3');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
-
 const Product = require("./db/models/Product");
+const auth = require('./routes/auth');
+
+const User = require('./db/models/User');
 
 const app = express();
 const port = process.env.PORT || 3550;
 
 /** Middleware */
 app.use(express.json());
-app.use(express.urlencoded({extended: true}))
+app.use(express.urlencoded({extended: true}));
+
+const expressSession = session({
+  secret: process.env.JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+});
+app.use(expressSession);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser(function (user, done) {
+  console.log(user._id);
+  done(null, user.user.id);
+});
+
+passport.deserializeUser(async function (id, done) {
+  const user = await User.getUser(id);
+
+  return (!!user.error) ? done(user.error, null) : done (null, user);
+});
+
+app.use('/auth', auth);
+
+// passport.use(User.createStrategy());
+
+
+// app.use('/user', user);
 
 const s3 = new S3({
   accessKeyId: process.env.AWS_ID,
@@ -27,6 +59,12 @@ const storage = multer.memoryStorage({
 });
 
 const upload = multer({storage: storage});
+
+function ensureAuthenticated(req, res, next) {
+  console.log("In ensure authenticated")
+  if (req.isAuthenticated()) { return next(); }
+  res.redirect('/auth/login')
+}
 
 app.post('/videos/upload', upload.single('video'), async (req, res) => {
   const barcode_id = req.query.barcode;
@@ -158,7 +196,7 @@ app.get('/videos/stream', function(req, res) {
   videoStream.pipe(res);
 });
 
-app.get('/', function(req, res) {
+app.get('/', ensureAuthenticated, function(req, res) {
   res.sendFile(`${__dirname}/index.html`);
 })
 
