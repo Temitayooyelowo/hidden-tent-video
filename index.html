@@ -16,16 +16,13 @@
     }
   </style>
 </head>
-<body onload="getVideoSize()">
+<body >
   <!-- Stream from S3 -->
-  <video id="VideoPlayer1" width="650" controls muted="muted" autoplay>
-    <!-- <source src="/videos/s3/stream" type="video/mp4"> -->
-  </video>
 
   <!-- Stream locally -->
-  <!-- <video id="VideoPlayer2" width="650" controls muted="muted" autoplay>
-    <source src="/videos/stream" type="video/mp4" id="local-vid">
-  </video> -->
+  <video id="VideoPlayer2" src="https://video-upload-bucket-1.s3.amazonaws.com/b464ba5d-04cb-4bd2-ad17-784908bdc53f.mp4?AWSAccessKeyId=AKIA35EDRFY5IBCICVGJ&Content-MD5=T5ZHDuenyz4EU8HnX%2FRy6Q%3D%3D&Expires=1610830521&Signature=RUqosS9aaMMQwaXzk2F1gWbfFrA%3D" width="650" controls muted="muted" autoplay>
+    <!-- <source src="https://video-upload-bucket-1.s3.us-east-2.amazonaws.com/0dd076d5-68d0-4647-8717-98ec3cdb4b30.mp4" type="video/mp4" id="local-vid"> -->
+  </video>
 
   <script>
     function getVideoSize() {
