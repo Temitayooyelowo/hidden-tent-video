@@ -60,7 +60,10 @@ const upload = multer({storage: storage});
 function ensureAuthenticated(req, res, next) {
   console.log("In ensure authenticated")
   if (req.isAuthenticated()) { return next(); }
-  res.redirect('/auth/login')
+  // res.redirect('/auth/login')
+  return res.status(401).send({
+    message: 'User unauthorized or credentials mismatch',
+  });
 }
 
 app.post('/videos/upload', ensureAuthenticated, upload.single('video'), async (req, res) => {
